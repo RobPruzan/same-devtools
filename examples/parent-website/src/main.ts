@@ -1,0 +1,3 @@
+import './hot-reload';
+
+// ... rest of your application code ... 
