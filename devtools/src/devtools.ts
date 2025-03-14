@@ -18,15 +18,27 @@ document.addEventListener("mousemove", (e) => {
   });
 });
 
-export type Message =
-  | {
-      kind: "mouse-position-update";
-      rect: DOMRect
-    }
-  // | {
-  //     kind: string;
-  //   };
+export type ChildToParentMessage = {
+  kind: "mouse-position-update";
+  rect: DOMRect;
+};
 
-const sendMessage = (message: Message) => {
+export type ParentToChildMessage = {
+  kind: "something";
+};
+
+// | {
+//     kind: string;
+//   };
+
+const sendMessage = (message: ChildToParentMessage) => {
   window.parent.postMessage(message, TARGET_ORIGIN);
 };
+
+window.addEventListener("message", (event) => {
+  if (event.origin !== TARGET_ORIGIN) {
+    return;
+  }
+  const message = event.data;
+  console.log("Received message from parent:", message);
+});

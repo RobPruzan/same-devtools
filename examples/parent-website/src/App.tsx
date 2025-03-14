@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import lastUpdate from "./hot-reload.ts";
 import "./App.css";
-import { Message } from "~/devtools";
+import { ChildToParentMessage } from "~/devtools";
 import { DevtoolsOverlay } from "./components/DevtoolsOverlay";
+import { useIFrameMessenger } from "./hooks/use-iframe-listener.ts";
 
 function App() {
   const iframeRef = useDevtoolsListener();
@@ -15,8 +16,19 @@ function App() {
     return () => clearTimeout(timer);
   }, [lastUpdate]);
 
+  const sendMessage = useIFrameMessenger({ iframe: iframeRef.current });
+
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
+      <button
+        onClick={() => {
+          sendMessage({
+            kind: "something",
+          });
+        }}
+      >
+        send child message
+      </button>
       <div
         style={{
           color: isPulsing ? "purple" : "inherit",
