@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChildToParentMessage } from "~/devtools";
 import { useIFrameMessenger } from "../hooks/use-iframe-listener";
+import lastUpdate from "../hot-reload.ts";
 
 interface Props {
   iframeRef: React.RefObject<HTMLIFrameElement | null>;
@@ -20,7 +21,14 @@ export function DevtoolsOverlay({ iframeRef }: Props) {
   const rafIdRef = useRef<number | null>(null);
   const lastThrottleTimeRef = useRef<number>(0);
   const lastElementRef = useRef<Element | null>(null);
+  const [iframeKey, setIframeKey] = useState(0);
+  console.log(lastUpdate);
 
+  useEffect(() => {
+    if (iframeRef.current) {
+      setIframeKey((prev) => prev + 1);
+    }
+  }, [iframeRef.current]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -104,28 +112,53 @@ export function DevtoolsOverlay({ iframeRef }: Props) {
       }
     };
 
-    const resizeObserver = new ResizeObserver(() => {
+    const updateCanvasSize = () => {
       if (iframe) {
         const rect = iframe.getBoundingClientRect();
         canvas.width = rect.width;
         canvas.height = rect.height;
-      }
-    });
 
+        if (currentRectRef.current && targetRectRef.current) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.strokeStyle = "rgba(138, 43, 226, 0.8)";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(
+            currentRectRef.current.x,
+            currentRectRef.current.y,
+            currentRectRef.current.width,
+            currentRectRef.current.height
+          );
+        }
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(updateCanvasSize);
     resizeObserver.observe(iframe);
+
+    updateCanvasSize();
+
     window.addEventListener("message", handleMessage);
+
+    const checkConnectionInterval = setInterval(() => {
+      if (targetRectRef.current && rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(animateRect);
+      }
+    }, 1000);
 
     return () => {
       window.removeEventListener("message", handleMessage);
       resizeObserver.disconnect();
+      clearInterval(checkConnectionInterval);
       if (rafIdRef.current !== null) {
         cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
       }
     };
-  }, [iframeRef]);
+  }, [iframeRef, iframeKey]);
 
   return (
     <canvas
+      key={iframeKey}
       ref={canvasRef}
       style={{
         position: "absolute",

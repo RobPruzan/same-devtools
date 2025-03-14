@@ -27,18 +27,27 @@ export type ParentToChildMessage = {
   kind: "something";
 };
 
-// | {
-//     kind: string;
-//   };
-
 const sendMessage = (message: ChildToParentMessage) => {
   window.parent.postMessage(message, TARGET_ORIGIN);
+};
+
+const handleParentMessage = (message: ParentToChildMessage) => {
+  console.log("the message", message);
 };
 
 window.addEventListener("message", (event) => {
   if (event.origin !== TARGET_ORIGIN) {
     return;
   }
-  const message = event.data;
-  console.log("Received message from parent:", message);
+  handleParentMessage(event.data as any);
 });
+
+/**
+ *
+ * basically treat this as a websocket connection
+ */
+
+/**
+ *
+ * todo: we need a ping pong server so parent knows if the child connection got interrupted
+ */
